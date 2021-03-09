@@ -1,6 +1,6 @@
 [package]
 name = "tpmless-tpm2"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Patrick Uiterwijk <patrick@puiterwijk.org>"]
 edition = "2018"
 license = "MIT"

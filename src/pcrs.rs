@@ -1,23 +1,10 @@
 use std::collections::HashMap;
 
 use openssl::hash::Hasher;
-use thiserror::Error;
 
-use crate::DigestAlgorithm;
+use crate::{DigestAlgorithm, Error};
 
 type PcrNum = u32;
-
-#[derive(Error, Debug)]
-pub enum Error {
-    #[error("Invalid PCR number requested")]
-    InvalidPCR,
-    #[error("Digest Algorithm requested that wasn't extended")]
-    UnusedAlgo,
-    #[error("Cryptographic error occured")]
-    Crypto(#[from] openssl::error::ErrorStack),
-    #[error("Invalid size length of data for digest")]
-    InvalidSize,
-}
 
 #[derive(Default, Debug)]
 pub struct PcrExtender {
