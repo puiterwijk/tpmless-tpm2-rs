@@ -1,0 +1,17 @@
+[package]
+name = "tpmless-tpm2-rs"
+version = "0.1.0"
+authors = ["Patrick Uiterwijk <patrick@puiterwijk.org>"]
+edition = "2018"
+license = "MIT"
+homepage = "https://github.com/puiterwijk/tpmless-tpm2-rs"
+description = "Various TPM 2 related functions without the need of a live TPM"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+openssl = "0.10"
+thiserror = "1.0"
+
+[dev-dependencies]
+hex = "0.4"
