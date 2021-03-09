@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
+use openssl::hash::{Hasher, MessageDigest};
 use thiserror::Error;
-use openssl::hash::{MessageDigest, Hasher};
 
 type PcrNum = u32;
 
@@ -47,7 +47,12 @@ pub struct PcrExtender {
     banks: HashMap<DigestAlgorithm, Vec<Vec<u8>>>,
 }
 
-fn extend_bank_val(pcr_index: usize, algo: DigestAlgorithm, digest: &[u8], bank: &mut Vec<Vec<u8>>) -> Result<(), Error> {
+fn extend_bank_val(
+    pcr_index: usize,
+    algo: DigestAlgorithm,
+    digest: &[u8],
+    bank: &mut Vec<Vec<u8>>,
+) -> Result<(), Error> {
     let mut hasher = Hasher::new(algo.openssl_md())?;
     hasher.update(&bank[pcr_index])?;
     hasher.update(digest)?;
@@ -56,7 +61,12 @@ fn extend_bank_val(pcr_index: usize, algo: DigestAlgorithm, digest: &[u8], bank:
 }
 
 impl PcrExtender {
-    pub fn extend_digest(&mut self, pcr_index: PcrNum, algo: DigestAlgorithm, digest: &[u8]) -> Result<(), Error> {
+    pub fn extend_digest(
+        &mut self,
+        pcr_index: PcrNum,
+        algo: DigestAlgorithm,
+        digest: &[u8],
+    ) -> Result<(), Error> {
         let pcr_index = pcr_index as usize;
 
         if digest.len() != algo.openssl_md().size() {
@@ -134,9 +144,7 @@ impl PcrExtenderBuilder {
         for algo in &self.mds {
             banks.insert(*algo, self.build_bank(algo));
         }
-        PcrExtender {
-            banks,
-        }
+        PcrExtender { banks }
     }
 }
 
@@ -152,11 +160,9 @@ mod tests {
             .add_digest_method(DigestAlgorithm::Sha256)
             .build();
 
-        extender.extend_digest(
-            0,
-            DigestAlgorithm::Sha1,
-            &hex::decode("deadbeef").unwrap(),
-        ).unwrap_err();
+        extender
+            .extend_digest(0, DigestAlgorithm::Sha1, &hex::decode("deadbeef").unwrap())
+            .unwrap_err();
     }
 
     #[test]
@@ -167,11 +173,13 @@ mod tests {
             .add_digest_method(DigestAlgorithm::Sha256)
             .build();
 
-        extender.extend_digest(
-            0,
-            DigestAlgorithm::Sha1,
-            &hex::decode("f1d2d2f924e986ac86fdf7b36c94bcdf32beec15").unwrap(),
-        ).unwrap();
+        extender
+            .extend_digest(
+                0,
+                DigestAlgorithm::Sha1,
+                &hex::decode("f1d2d2f924e986ac86fdf7b36c94bcdf32beec15").unwrap(),
+            )
+            .unwrap();
 
         assert_eq!(
             extender.pcr_algo_value(0, DigestAlgorithm::Sha1).unwrap(),
@@ -186,7 +194,9 @@ mod tests {
             &[0; 32],
         );
         assert_eq!(
-            extender.pcr_algo_value(10, DigestAlgorithm::Sha256).unwrap(),
+            extender
+                .pcr_algo_value(10, DigestAlgorithm::Sha256)
+                .unwrap(),
             &[0; 32],
         );
     }
@@ -199,10 +209,7 @@ mod tests {
             .add_digest_method(DigestAlgorithm::Sha256)
             .build();
 
-        extender.extend(
-            0,
-            &"testing 42".as_bytes(),
-        ).unwrap();
+        extender.extend(0, &"testing 42".as_bytes()).unwrap();
 
         assert_eq!(
             extender.pcr_algo_value(0, DigestAlgorithm::Sha1).unwrap(),
@@ -214,10 +221,13 @@ mod tests {
         );
         assert_eq!(
             extender.pcr_algo_value(0, DigestAlgorithm::Sha256).unwrap(),
-            &hex::decode("F11F5E30B2297E43A6AC98E9E0B0A94069B5074E0C1B021C77FC571872473BCD").unwrap(),
+            &hex::decode("F11F5E30B2297E43A6AC98E9E0B0A94069B5074E0C1B021C77FC571872473BCD")
+                .unwrap(),
         );
         assert_eq!(
-            extender.pcr_algo_value(10, DigestAlgorithm::Sha256).unwrap(),
+            extender
+                .pcr_algo_value(10, DigestAlgorithm::Sha256)
+                .unwrap(),
             &[0; 32],
         );
     }
@@ -230,16 +240,20 @@ mod tests {
             .add_digest_method(DigestAlgorithm::Sha256)
             .build();
 
-        extender.extend_digest(
-            0,
-            DigestAlgorithm::Sha1,
-            &hex::decode("f1d2d2f924e986ac86fdf7b36c94bcdf32beec15").unwrap(),
-        ).unwrap();
-        extender.extend_digest(
-            0,
-            DigestAlgorithm::Sha1,
-            &hex::decode("f1d2d2f924e986ac86fdf7b36c94bcdf32beec15").unwrap(),
-        ).unwrap();
+        extender
+            .extend_digest(
+                0,
+                DigestAlgorithm::Sha1,
+                &hex::decode("f1d2d2f924e986ac86fdf7b36c94bcdf32beec15").unwrap(),
+            )
+            .unwrap();
+        extender
+            .extend_digest(
+                0,
+                DigestAlgorithm::Sha1,
+                &hex::decode("f1d2d2f924e986ac86fdf7b36c94bcdf32beec15").unwrap(),
+            )
+            .unwrap();
 
         assert_eq!(
             extender.pcr_algo_value(0, DigestAlgorithm::Sha1).unwrap(),
@@ -255,16 +269,21 @@ mod tests {
             .add_digest_method(DigestAlgorithm::Sha256)
             .build();
 
-        extender.extend_digest(
-            0,
-            DigestAlgorithm::Sha1,
-            &hex::decode("f1d2d2f924e986ac86fdf7b36c94bcdf32beec15").unwrap(),
-        ).unwrap();
-        extender.extend_digest(
-            0,
-            DigestAlgorithm::Sha256,
-            &hex::decode("b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c").unwrap(),
-        ).unwrap();
+        extender
+            .extend_digest(
+                0,
+                DigestAlgorithm::Sha1,
+                &hex::decode("f1d2d2f924e986ac86fdf7b36c94bcdf32beec15").unwrap(),
+            )
+            .unwrap();
+        extender
+            .extend_digest(
+                0,
+                DigestAlgorithm::Sha256,
+                &hex::decode("b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c")
+                    .unwrap(),
+            )
+            .unwrap();
 
         assert_eq!(
             extender.pcr_algo_value(0, DigestAlgorithm::Sha1).unwrap(),
@@ -272,7 +291,8 @@ mod tests {
         );
         assert_eq!(
             extender.pcr_algo_value(0, DigestAlgorithm::Sha256).unwrap(),
-            &hex::decode("44F12027AB81DFB6E096018F5A9F19645F988D45529CDED3427159DC0032D921").unwrap(),
+            &hex::decode("44F12027AB81DFB6E096018F5A9F19645F988D45529CDED3427159DC0032D921")
+                .unwrap(),
         );
     }
 }
