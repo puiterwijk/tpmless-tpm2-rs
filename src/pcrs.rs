@@ -1,34 +1,11 @@
 use std::collections::HashMap;
 
-use openssl::hash::{Hasher, MessageDigest};
+use openssl::hash::Hasher;
 use thiserror::Error;
 
+use crate::DigestAlgorithm;
+
 type PcrNum = u32;
-
-#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
-#[non_exhaustive]
-pub enum DigestAlgorithm {
-    Sha1,
-    Sha256,
-    Sha384,
-    Sha512,
-}
-
-impl DigestAlgorithm {
-    fn new_empty(&self) -> Vec<u8> {
-        let len = self.openssl_md().size();
-        vec![0; len]
-    }
-
-    fn openssl_md(&self) -> MessageDigest {
-        match self {
-            DigestAlgorithm::Sha1 => MessageDigest::sha1(),
-            DigestAlgorithm::Sha256 => MessageDigest::sha256(),
-            DigestAlgorithm::Sha384 => MessageDigest::sha384(),
-            DigestAlgorithm::Sha512 => MessageDigest::sha512(),
-        }
-    }
-}
 
 #[derive(Error, Debug)]
 pub enum Error {
