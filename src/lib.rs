@@ -37,6 +37,16 @@ impl DigestAlgorithm {
             DigestAlgorithm::Sha512 => MessageDigest::sha512(),
         }
     }
+
+    pub fn from_tpm_alg_id(alg_id: u16) -> Option<Self> {
+        match alg_id {
+            0x0004 => Some(DigestAlgorithm::Sha1),
+            0x000B => Some(DigestAlgorithm::Sha256),
+            0x000C => Some(DigestAlgorithm::Sha384),
+            0x000D => Some(DigestAlgorithm::Sha512),
+            _ => None,
+        }
+    }
 }
 
 impl FromStr for DigestAlgorithm {
