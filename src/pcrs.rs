@@ -6,22 +6,48 @@ use crate::{DigestAlgorithm, Error};
 
 type PcrNum = u32;
 
-#[derive(Default, Debug)]
-pub struct PcrExtender {
-    banks: HashMap<DigestAlgorithm, Vec<Vec<u8>>>,
+#[derive(Debug)]
+pub struct PcrValue {
+    algo: DigestAlgorithm,
+    value: Vec<u8>,
+    ever_extended: bool,
 }
 
-fn extend_bank_val(
-    pcr_index: usize,
-    algo: DigestAlgorithm,
-    digest: &[u8],
-    bank: &mut Vec<Vec<u8>>,
-) -> Result<(), Error> {
-    let mut hasher = Hasher::new(algo.openssl_md())?;
-    hasher.update(&bank[pcr_index])?;
-    hasher.update(digest)?;
-    bank[pcr_index] = hasher.finish()?.to_vec();
-    Ok(())
+#[cfg(feature = "serialize")]
+impl serde::Serialize for PcrValue {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&hex::encode(&self.value))
+    }
+}
+
+impl PcrValue {
+    fn extend(&mut self, digest: &[u8]) -> Result<(), Error> {
+        let mut hasher = Hasher::new(self.algo.openssl_md())?;
+        hasher.update(&self.value)?;
+        hasher.update(digest)?;
+        self.value = hasher.finish()?.to_vec();
+        self.ever_extended = true;
+        Ok(())
+    }
+}
+
+impl DigestAlgorithm {
+    fn new_empty(&self) -> PcrValue {
+        let len = self.openssl_md().size();
+        PcrValue {
+            algo: *self,
+            value: vec![0; len],
+            ever_extended: false,
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct PcrExtender {
+    banks: HashMap<DigestAlgorithm, Vec<PcrValue>>,
 }
 
 impl PcrExtender {
@@ -39,7 +65,7 @@ impl PcrExtender {
 
         let bank = self.banks.get_mut(&algo).ok_or(Error::UnusedAlgo)?;
         if pcr_index < bank.len() {
-            extend_bank_val(pcr_index, algo, digest, bank)?;
+            bank[pcr_index].extend(digest)?;
         }
 
         Ok(())
@@ -53,7 +79,7 @@ impl PcrExtender {
             hasher.update(value)?;
             let new_val = hasher.finish()?;
 
-            extend_bank_val(pcr_index, *algo, &new_val, bank)?;
+            bank[pcr_index].extend(&new_val)?;
         }
         Ok(())
     }
@@ -65,7 +91,14 @@ impl PcrExtender {
         if pcr_index >= bank.len() {
             return Err(Error::InvalidPCR);
         }
-        Ok(&bank[pcr_index])
+        Ok(&bank[pcr_index].value)
+    }
+
+    pub fn values(mut self) -> HashMap<DigestAlgorithm, Vec<Vec<u8>>> {
+        self.banks
+            .drain()
+            .map(|(algo, mut bank)| (algo, bank.drain(..).map(|val| val.value).collect()))
+            .collect()
     }
 }
 
@@ -93,20 +126,16 @@ impl PcrExtenderBuilder {
         self
     }
 
-    fn build_bank(&self, algo: &DigestAlgorithm) -> Vec<Vec<u8>> {
-        let mut bank = Vec::new();
-
-        for _ in 0..self.num_pcrs {
-            bank.push(algo.new_empty());
-        }
-
-        bank
-    }
-
     pub fn build(&self) -> PcrExtender {
         let mut banks = HashMap::new();
         for algo in &self.mds {
-            banks.insert(*algo, self.build_bank(algo));
+            let mut bank = Vec::new();
+
+            for _ in 0..self.num_pcrs {
+                bank.push(algo.new_empty());
+            }
+
+            banks.insert(*algo, bank);
         }
         PcrExtender { banks }
     }
@@ -258,5 +287,46 @@ mod tests {
             &hex::decode("44F12027AB81DFB6E096018F5A9F19645F988D45529CDED3427159DC0032D921")
                 .unwrap(),
         );
+    }
+
+    #[test]
+    fn test_multibank_all_values() {
+        let mut extender = PcrExtenderBuilder::new()
+            .set_num_pcrs(24)
+            .add_digest_method(DigestAlgorithm::Sha1)
+            .add_digest_method(DigestAlgorithm::Sha256)
+            .build();
+
+        extender
+            .extend_digest(
+                8,
+                DigestAlgorithm::Sha1,
+                &hex::decode("f1d2d2f924e986ac86fdf7b36c94bcdf32beec15").unwrap(),
+            )
+            .unwrap();
+        extender
+            .extend_digest(
+                8,
+                DigestAlgorithm::Sha256,
+                &hex::decode("b5bb9d8014a0f9b1d61e21e796d78dccdf1352f23cd32812f4850b878ae4944c")
+                    .unwrap(),
+            )
+            .unwrap();
+
+        let values = extender.values();
+
+        assert_eq!(values.get(&DigestAlgorithm::Sha1).unwrap()[0], [0; 20],);
+        assert_eq!(
+            values.get(&DigestAlgorithm::Sha1).unwrap()[8],
+            hex::decode("3D96EFE6E4A9ECB1270DF4D80DEDD5062B831B5A").unwrap(),
+        );
+        assert_eq!(values.get(&DigestAlgorithm::Sha1).unwrap()[10], [0; 20],);
+        assert_eq!(values.get(&DigestAlgorithm::Sha256).unwrap()[0], [0; 32],);
+        assert_eq!(
+            values.get(&DigestAlgorithm::Sha256).unwrap()[8],
+            hex::decode("44F12027AB81DFB6E096018F5A9F19645F988D45529CDED3427159DC0032D921")
+                .unwrap(),
+        );
+        assert_eq!(values.get(&DigestAlgorithm::Sha256).unwrap()[10], [0; 32],);
     }
 }

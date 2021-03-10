@@ -28,11 +28,6 @@ pub enum DigestAlgorithm {
 }
 
 impl DigestAlgorithm {
-    fn new_empty(&self) -> Vec<u8> {
-        let len = self.openssl_md().size();
-        vec![0; len]
-    }
-
     fn openssl_md(&self) -> MessageDigest {
         match self {
             DigestAlgorithm::Sha1 => MessageDigest::sha1(),
