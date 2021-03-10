@@ -19,7 +19,8 @@ pub enum Error {
 
 #[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
 #[non_exhaustive]
-#[cfg_attr(feature = "serialize", derive(serde::Serialize))]
+#[cfg_attr(any(feature = "serialize", test), derive(serde::Serialize))]
+#[cfg_attr(any(feature = "serialize", test), serde(rename_all = "lowercase"))]
 pub enum DigestAlgorithm {
     Sha1,
     Sha256,
