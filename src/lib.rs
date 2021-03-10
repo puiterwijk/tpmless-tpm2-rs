@@ -29,7 +29,7 @@ pub enum DigestAlgorithm {
 }
 
 impl DigestAlgorithm {
-    fn openssl_md(&self) -> MessageDigest {
+    pub fn openssl_md(&self) -> MessageDigest {
         match self {
             DigestAlgorithm::Sha1 => MessageDigest::sha1(),
             DigestAlgorithm::Sha256 => MessageDigest::sha256(),
