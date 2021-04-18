@@ -1,15 +1,12 @@
 use openssl::{
+    encrypt::Encrypter,
     hash::MessageDigest,
-    pkey::{PKeyRef, HasPublic, Id as pkey_id},
+    pkey::{HasPublic, Id as pkey_id, PKeyRef},
     rand::rand_bytes,
-    encrypt:: Encrypter,
     rsa::Padding,
 };
 
-use crate::{
-    crypto::kdf_a,
-    Error,
-};
+use crate::{crypto::kdf_a, Error};
 
 const CREDENTIAL_LABEL_SYMKEY: &[u8] = b"STORAGE";
 const CREDENTIAL_LABEL_IDENTITY: &[u8] = b"IDENTITY";
@@ -20,7 +17,11 @@ pub struct Credential {
     encrypted_secret: Vec<u8>,
 }
 
-fn build_seed_rsa<KT, LT>(encryption_pub: &PKeyRef<KT>, oaep_md: MessageDigest, label: LT) -> Result<(Vec<u8>, Vec<u8>), Error>
+fn build_seed_rsa<KT, LT>(
+    encryption_pub: &PKeyRef<KT>,
+    oaep_md: MessageDigest,
+    label: LT,
+) -> Result<(Vec<u8>, Vec<u8>), Error>
 where
     KT: HasPublic,
     LT: AsRef<[u8]>,
@@ -40,7 +41,11 @@ where
     Ok((seed, encrypted_seed))
 }
 
-fn build_seed<KT, LT>(encryption_pub: &PKeyRef<KT>, oaep_md: MessageDigest, label: LT) -> Result<(Vec<u8>, Vec<u8>), Error>
+fn build_seed<KT, LT>(
+    encryption_pub: &PKeyRef<KT>,
+    oaep_md: MessageDigest,
+    label: LT,
+) -> Result<(Vec<u8>, Vec<u8>), Error>
 where
     KT: HasPublic,
     LT: AsRef<[u8]>,
@@ -54,13 +59,22 @@ where
     }
 }
 
-pub fn make_credential<CVT, KT, ONT>(credential_value: CVT, encryption_namealg: MessageDigest, encryption_pub: &PKeyRef<KT>, object_name: ONT) -> Result<Credential, Error>
+pub fn make_credential<CVT, KT, ONT>(
+    credential_value: CVT,
+    encryption_namealg: MessageDigest,
+    encryption_pub: &PKeyRef<KT>,
+    object_name: ONT,
+) -> Result<Credential, Error>
 where
     CVT: AsRef<[u8]>,
     KT: HasPublic,
     ONT: AsRef<[u8]>,
 {
-    let (seed, encrypted_seed) = build_seed(encryption_pub, encryption_namealg, &CREDENTIAL_LABEL_IDENTITY)?;
+    let (seed, encrypted_seed) = build_seed(
+        encryption_pub,
+        encryption_namealg,
+        &CREDENTIAL_LABEL_IDENTITY,
+    )?;
 
     let symkey = kdf_a(
         encryption_namealg,

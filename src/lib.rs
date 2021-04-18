@@ -71,5 +71,5 @@ pub use pcrs::{PcrExtender, PcrExtenderBuilder};
 
 mod objects;
 
-mod crypto;
 mod credentials;
+mod crypto;

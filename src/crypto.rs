@@ -4,8 +4,16 @@ use openssl_kdf::{Kdf, KdfKbMode, KdfMacType, KdfType};
 use crate::Error;
 
 #[cfg(feature = "backported_kdf")]
-pub(crate) fn kdf_a<KT: AsRef<[u8]>, LT: AsRef<[u8]>, CUT: AsRef<[u8]>, CVT: AsRef<[u8]>>(md: MessageDigest, key: KT, label: LT, contextU: CUT, contextV: CVT, bits: u32) -> Result<Vec<u8>, Error> {
-    let mut context: Vec<u8> = Vec::with_capacity(contextU.as_ref().len() + contextV.as_ref().len() - 4);
+pub(crate) fn kdf_a<KT: AsRef<[u8]>, LT: AsRef<[u8]>, CUT: AsRef<[u8]>, CVT: AsRef<[u8]>>(
+    md: MessageDigest,
+    key: KT,
+    label: LT,
+    contextU: CUT,
+    contextV: CVT,
+    bits: u32,
+) -> Result<Vec<u8>, Error> {
+    let mut context: Vec<u8> =
+        Vec::with_capacity(contextU.as_ref().len() + contextV.as_ref().len() - 4);
     context.extend_from_slice(&contextU.as_ref()[2..]);
     context.extend_from_slice(&contextV.as_ref()[2..]);
     let context = context;

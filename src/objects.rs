@@ -1,5 +1,5 @@
-use std::io::{Read, Write};
 use std::convert::TryFrom;
+use std::io::{Read, Write};
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use openssl::pkey::{PKey, Public};
@@ -7,9 +7,7 @@ use openssl::pkey::{PKey, Public};
 use crate::Error;
 
 #[derive(Debug)]
-pub struct Tpm2b (
-    Vec<u8>,
-);
+pub struct Tpm2b(Vec<u8>);
 
 impl Tpm2b {
     pub fn from_reader<R: Read>(mut reader: R) -> Result<Tpm2b, Error> {
@@ -28,9 +26,7 @@ impl Tpm2b {
     }
 }
 
-pub struct Tpm2bPublic {
-
-}
+pub struct Tpm2bPublic {}
 
 impl Tpm2bPublic {
     pub fn from_reader<R: Read>(mut reader: R) -> Result<Tpm2bPublic, Error> {
