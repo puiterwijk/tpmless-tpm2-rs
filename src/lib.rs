@@ -6,7 +6,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Invalid PCR number requested")]
-    InvalidPCR,
+    InvalidPcr,
     #[error("Unused algorithm requested")]
     UnusedAlgo,
     #[error("Cryptographic error occured")]
@@ -15,9 +15,11 @@ pub enum Error {
     InvalidSize,
     #[error("Unsupported algorithm requested")]
     UnsupportedAlgo,
+    #[error("I/O Error")]
+    IoError(#[from] std::io::Error),
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone)]
+#[derive(Debug, Hash, PartialEq, Eq, Copy, Clone, PartialOrd, Ord)]
 #[non_exhaustive]
 #[cfg_attr(any(feature = "serialize", test), derive(serde::Serialize))]
 #[cfg_attr(any(feature = "serialize", test), serde(rename_all = "lowercase"))]
@@ -66,3 +68,8 @@ impl FromStr for DigestAlgorithm {
 
 mod pcrs;
 pub use pcrs::{PcrExtender, PcrExtenderBuilder};
+
+mod objects;
+
+mod crypto;
+mod credentials;

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use openssl::hash::Hasher;
 
@@ -47,7 +47,7 @@ impl DigestAlgorithm {
 
 #[derive(Default, Debug)]
 pub struct PcrExtender {
-    banks: HashMap<DigestAlgorithm, Vec<PcrValue>>,
+    banks: BTreeMap<DigestAlgorithm, Vec<PcrValue>>,
 }
 
 #[cfg(any(feature = "serialize", test))]
@@ -103,15 +103,15 @@ impl PcrExtender {
 
         let bank = self.banks.get(&algo).ok_or(Error::UnusedAlgo)?;
         if pcr_index >= bank.len() {
-            return Err(Error::InvalidPCR);
+            return Err(Error::InvalidPcr);
         }
         Ok(&bank[pcr_index].value)
     }
 
-    pub fn values(mut self) -> HashMap<DigestAlgorithm, Vec<Vec<u8>>> {
+    pub fn values(&self) -> BTreeMap<DigestAlgorithm, Vec<Vec<u8>>> {
         self.banks
-            .drain()
-            .map(|(algo, mut bank)| (algo, bank.drain(..).map(|val| val.value).collect()))
+            .iter()
+            .map(|(algo, bank)| (*algo, bank.iter().map(|val| val.value.clone()).collect()))
             .collect()
     }
 }
@@ -141,7 +141,7 @@ impl PcrExtenderBuilder {
     }
 
     pub fn build(&self) -> PcrExtender {
-        let mut banks = HashMap::new();
+        let mut banks = BTreeMap::new();
         for algo in &self.mds {
             let mut bank = Vec::new();
 
@@ -397,7 +397,7 @@ mod tests {
     "0000000000000000000000000000000000000000",
     "0000000000000000000000000000000000000000",
     "0000000000000000000000000000000000000000"
-  ]"#
+  ],"#
         ));
         assert!(values.contains(
             r#"

@@ -1,6 +1,6 @@
 [package]
 name = "tpmless-tpm2"
-version = "0.3.3"
+version = "0.4.0"
 authors = ["Patrick Uiterwijk <patrick@puiterwijk.org>"]
 edition = "2018"
 license = "MIT"
@@ -11,15 +11,21 @@ description = "Various TPM 2 related functions without the need of a live TPM"
 
 [dependencies]
 openssl = "0.10"
+openssl-kdf = { version = "0.1", optional = true }
 thiserror = "1.0"
 serde = { version = "1.0", features = ["derive"], optional = true }
 hex = { version = "0.4", optional = true }
+byteorder = "1"
 
 [dev-dependencies]
 hex = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["preserve_order"] }
 
+# For integration tests
+tss-esapi = "4.0.10-alpha.2"
+
 [features]
-default = []
+default = ["backported_kdf"]
 serialize = ["serde", "hex"]
+backported_kdf = ["openssl-kdf"]
